@@ -14,6 +14,13 @@ void setWriteMode() {
 	curs_set(1);
 }
 
+std::string getnstring(int limit) {
+	char temp[limit];
+	getnstr(temp, limit);
+
+	return std::string(temp);
+}
+
 void loadMemos(void);
 int promptOptions(std::vector<std::string>);
 
@@ -31,7 +38,30 @@ int main() {
 	options.push_back("Create New Memo");
 	options.push_back("Exit");
 
-	int selectedOption = promptOptions(options);	
+	int selectedOption;
+	while(true) {
+		if(options.size() < memos.size()+2) 
+			options.insert(options.begin(), memos.back().title);
+
+		setSelectMode();
+		selectedOption = promptOptions(options);	
+		if(selectedOption < memos.size()) { 
+			// start editing selected memo
+		}
+		else if(selectedOption == memos.size()) {
+			clear();
+			printw("Enter new memo's title (max %d characters):\n", Memo::maxTitleLen);
+
+			setWriteMode();
+			std::string title = getnstring(Memo::maxTitleLen);
+			title = "[ " + title + " ]";
+
+			std::string path = "memo" + std::to_string(memos.size()) + ".txt";
+			memos.push_back(Memo(path, title));
+		}
+		else 
+			break;
+	}
 
 	endwin();
 	return 0;
@@ -78,8 +108,6 @@ int promptOptions(std::vector<std::string> options) {
 }
 
 void loadMemos() {} 
-
-
 
 
 
