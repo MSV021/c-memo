@@ -70,6 +70,12 @@ void editor::edit(std::vector<std::string>& content) {
 					cx = 0;
 					refall = true;	
 					break;
+				case KEY_HOME: 
+					cx = 0;
+					break;
+				case KEY_END: 
+					cx = content[cy].size();
+					break;
 				case KEY_LEFT: 
 					if(cx > 0) cx--;
 					break;
