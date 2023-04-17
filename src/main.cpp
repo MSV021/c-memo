@@ -1,3 +1,4 @@
+#include "editor.hpp"
 #include "Memo.hpp"
 #include <vector> 
 #include <string> 
@@ -28,6 +29,15 @@ int main() {
 	initscr();
 	cbreak(); 
 	keypad(stdscr, TRUE);
+
+	// TESTING EDITOR
+	setWriteMode();
+	std::vector<std::string> lines = {"Hello, World!", "I am Mahdi Rezaei", "Let's edit some text"};
+	editor::edit(lines);
+	getch();
+	endwin();
+	return 0;
+	// TESTING EDITOR
 
 	static std::vector<Memo> memos;
 	loadMemos();
