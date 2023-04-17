@@ -30,15 +30,6 @@ int main() {
 	cbreak(); 
 	keypad(stdscr, TRUE);
 
-	// TESTING EDITOR
-	setWriteMode();
-	std::vector<std::string> lines = {"Hello, World!", "I am Mahdi Rezaei", "Let's edit some text"};
-	editor::edit(lines);
-	getch();
-	endwin();
-	return 0;
-	// TESTING EDITOR
-
 	static std::vector<Memo> memos;
 	loadMemos();
 
@@ -51,12 +42,13 @@ int main() {
 	int selectedOption;
 	while(true) {
 		if(options.size() < memos.size()+2) 
-			options.insert(options.begin(), memos.back().title);
+			options.insert(options.begin()+memos.size()-1, memos.back().title);
 
 		setSelectMode();
 		selectedOption = promptOptions(options);	
 		if(selectedOption < memos.size()) { 
-			// start editing selected memo
+			setWriteMode();
+			editor::edit(memos[selectedOption].content);
 		}
 		else if(selectedOption == memos.size()) {
 			clear();

@@ -7,6 +7,8 @@
 
 void editor::edit(std::vector<std::string>& content) {
 	int cy = 0, cx = 0;
+	if(content.size() == 0) 
+		content.push_back(std::string());
 	if(content.size() > 0) {
 		for(auto line : content) {	
 			addstr(line.c_str());
@@ -89,6 +91,9 @@ void editor::edit(std::vector<std::string>& content) {
 				case KEY_DOWN: 
 					if(cy < content.size()-1) cy++;
 					if(cx > content[cy].size()) cx = content[cy].size();
+					break;
+				case 27: 
+					return;
 			}
 		}
 	}
