@@ -1,9 +1,12 @@
 #include "editor.hpp"
 #include "Memo.hpp"
+#include <fstream> 
 #include <vector> 
 #include <string> 
 
 #include <ncurses.h> 
+
+const std::string SAVEFILE = "save.bin";
 
 void setSelectMode() {
 	noecho();
@@ -22,7 +25,8 @@ std::string getnstring(int limit) {
 	return std::string(temp);
 }
 
-void loadMemos(void);
+void loadMemos(std::vector<Memo>&);
+void saveMemos(std::vector<Memo>);
 int promptOptions(std::vector<std::string>);
 
 int main() {
@@ -31,7 +35,8 @@ int main() {
 	keypad(stdscr, TRUE);
 
 	static std::vector<Memo> memos;
-	loadMemos();
+
+	loadMemos(memos);
 
 	std::vector<std::string> options;
 	for(auto memo : memos) 
@@ -49,6 +54,7 @@ int main() {
 		if(selectedOption < memos.size()) { 
 			setWriteMode();
 			editor::edit(memos[selectedOption].content);
+			saveMemos(memos);
 		}
 		else if(selectedOption == memos.size()) {
 			clear();
@@ -109,7 +115,57 @@ int promptOptions(std::vector<std::string> options) {
 	}	
 }
 
-void loadMemos() {} 
+void saveMemos(std::vector<Memo> memos) {
+	std::ofstream file;
+	file.open(SAVEFILE);
+
+	for(auto memo : memos) 
+		file << memo.path << '\n';	
+	file.close();
+
+	for(auto memo : memos) {
+		file.open(memo.path);
+		file << memo.title << '\n';
+		for(auto line : memo.content) {
+			file << line << '\n';
+		}
+		file.close();
+	}
+}
+
+void loadMemos(std::vector<Memo>& memos) {
+	std::ifstream file;
+	file.open(SAVEFILE);
+
+	if(!file.good()) 
+		return;
+
+	std::string temp;
+	std::vector<std::string> paths;
+	while(std::getline(file, temp)) 
+		paths.push_back(temp);
+	file.close();
+
+	Memo memo;
+	for(auto path : paths) {
+		memo.path = path;
+		file.open(memo.path);
+		std::getline(file, memo.title);
+		while(std::getline(file, temp)) 
+			memo.content.push_back(temp);
+
+		memos.push_back(memo);
+		memo.content.clear();
+		file.close();
+	}
+} 
+
+
+
+
+
+
+
 
 
 

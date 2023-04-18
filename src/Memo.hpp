@@ -7,5 +7,6 @@ struct Memo {
 	std::vector<std::string> content;
    	const static int maxTitleLen = 25;
 
+	Memo() {} 
 	Memo(std::string path, std::string title) : path{path}, title{title} {}
 };
