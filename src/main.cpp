@@ -8,26 +8,15 @@
 
 const std::string SAVEFILE = "save.bin";
 
-void setSelectMode() {
-	noecho();
-	curs_set(0);
-}
+std::string getnstring(int);
+void setSelectMode(void); 
+void setWriteMode(void);
 
-void setWriteMode() {
-	echo();
-	curs_set(1);
-}
-
-std::string getnstring(int limit) {
-	char temp[limit];
-	getnstr(temp, limit);
-
-	return std::string(temp);
-}
-
-void loadMemos(std::vector<Memo>&);
-void saveMemos(std::vector<Memo>);
 int promptOptions(std::vector<std::string>);
+void saveMemos(std::vector<Memo>);
+void loadMemos(std::vector<Memo>&);
+void createNewMemo(std::vector<Memo>&);
+void editMemo(Memo&);
 
 int main() {
 	initscr();
@@ -35,7 +24,6 @@ int main() {
 	keypad(stdscr, TRUE);
 
 	static std::vector<Memo> memos;
-
 	loadMemos(memos);
 
 	std::vector<std::string> options;
@@ -46,26 +34,14 @@ int main() {
 
 	int selectedOption;
 	while(true) {
-		if(options.size() < memos.size()+2) 
-			options.insert(options.begin()+memos.size()-1, memos.back().title);
-
-		setSelectMode();
 		selectedOption = promptOptions(options);	
 		if(selectedOption < memos.size()) { 
-			setWriteMode();
-			editor::edit(memos[selectedOption].content);
-			saveMemos(memos);
+			editMemo(memos[selectedOption]);
+			saveMemos(memos);		
 		}
 		else if(selectedOption == memos.size()) {
-			clear();
-			printw("Enter new memo's title (max %d characters):\n", Memo::maxTitleLen);
-
-			setWriteMode();
-			std::string title = getnstring(Memo::maxTitleLen);
-			title = "[ " + title + " ]";
-
-			std::string path = "memo" + std::to_string(memos.size()) + ".txt";
-			memos.push_back(Memo(path, title));
+			createNewMemo(memos);
+			options.insert(options.begin()+memos.size()-1, memos.back().title);
 		}
 		else 
 			break;
@@ -75,21 +51,42 @@ int main() {
 	return 0;
 }
 
+std::string getnstring(int limit) {
+	char temp[limit];
+	getnstr(temp, limit);
+
+	return std::string(temp);
+}
+
+void setSelectMode() {
+	noecho();
+	curs_set(0);
+}
+
+void setWriteMode() {
+	echo();
+	curs_set(1);
+}
+
+void printOptions(std::vector<std::string> options, int currentOption) {
+	clear();
+	for(int i = 0; i < options.size(); i++) {
+		if(i == currentOption)
+			attrset(A_REVERSE); 
+			
+		addstr(options[i].c_str());
+		addch('\n');
+
+		attrset(A_NORMAL);
+	}
+}
+
 int promptOptions(std::vector<std::string> options) {
 	setSelectMode();
 
 	int currentOption = 0;
 	while(true) {
-		clear();
-		for(int i = 0; i < options.size(); i++) {
-			if(i == currentOption)
-				attrset(A_REVERSE); 
-			
-			addstr(options[i].c_str());
-			addch('\n');
-
-			attrset(A_NORMAL);
-		}
+		printOptions(options, currentOption);
 
 		int key;
 		while((key = getch()) != KEY_UP && key != KEY_DOWN && key != '\n') 
@@ -97,22 +94,38 @@ int promptOptions(std::vector<std::string> options) {
 
 		switch(key) {
 			case KEY_UP: 
-				if(currentOption != 0) 
-					currentOption--;
-				else 
+				if(currentOption == 0) 
 					currentOption = options.size()-1;
+				else 
+					currentOption--;
 				break;
 			case KEY_DOWN: 
-				if(currentOption != options.size()-1) 
-					currentOption++;
-				else 
+				if(currentOption == options.size()-1) 
 					currentOption = 0;
+				else 
+					currentOption++;
 				break;
 			case '\n': 
-				clear();
 				return currentOption;
 		}
 	}	
+}
+
+void createNewMemo(std::vector<Memo>& memos) {
+		clear();
+		printw("Enter new memo's title (max %d characters):\n", Memo::maxTitleLen);
+
+		setWriteMode();
+		std::string title = getnstring(Memo::maxTitleLen);
+		title = "[ " + title + " ]";
+
+		std::string path = "memo" + std::to_string(memos.size()) + ".txt";
+		memos.push_back(Memo(path, title));
+}
+
+void editMemo(Memo& memo) {
+	setWriteMode();
+	editor::edit(memo.content);
 }
 
 void saveMemos(std::vector<Memo> memos) {
