@@ -1,10 +1,12 @@
 #include "editor.hpp"
 #include "Memo.hpp"
+#include <cstdio> 
 #include <fstream> 
 #include <vector> 
 #include <string> 
 
 #include <ncurses.h> 
+#define KEY_ESC 27
 
 const std::string SAVEFILE = "save.bin";
 
@@ -12,16 +14,18 @@ std::string getnstring(int);
 void setSelectMode(void); 
 void setWriteMode(void);
 
-int promptOptions(std::vector<std::string>);
+void printOptions(std::vector<std::string>, int);
+void printGreeting();
+void editMemo(Memo&);
+void removeMemo(std::vector<Memo>&, int);
 void saveMemos(std::vector<Memo>);
 void loadMemos(std::vector<Memo>&);
 void createNewMemo(std::vector<Memo>&);
-void editMemo(Memo&);
 
 int main() {
 	initscr();
-	cbreak(); 
 	keypad(stdscr, TRUE);
+	set_escdelay(100);
 
 	static std::vector<Memo> memos;
 	loadMemos(memos);
@@ -29,26 +33,58 @@ int main() {
 	std::vector<std::string> options;
 	for(auto memo : memos) 
 		options.push_back(memo.title);
-	options.push_back("Create New Memo");
-	options.push_back("Exit");
 
-	int selectedOption;
+	int key;
+	int selectedOption = 0;
 	while(true) {
-		selectedOption = promptOptions(options);	
-		if(selectedOption < memos.size()) { 
-			editMemo(memos[selectedOption]);
-			saveMemos(memos);		
-		}
-		else if(selectedOption == memos.size()) {
-			createNewMemo(memos);
-			options.insert(options.begin()+memos.size()-1, memos.back().title);
+		clear();
+		if(!options.empty()) {
+			attrset(A_BOLD);
+			printw("YOUR MEMOS\n");
+			attrset(A_NORMAL);
+			printOptions(options, selectedOption);
 		}
 		else 
-			break;
-	}
+			printGreeting();
 
-	endwin();
-	return 0;
+		setSelectMode();
+		key = getch();
+		if(!options.empty()) {
+			switch(key) {
+				case KEY_UP: 
+					selectedOption--;
+					if(selectedOption < 0) 
+						selectedOption = options.size()-1;
+					break;
+				case KEY_DOWN: 
+					selectedOption++;
+					if(selectedOption >= options.size()) 
+						selectedOption = 0;
+					break;
+				case '\n': 
+					editMemo(memos[selectedOption]);
+					saveMemos(memos);
+					break;	
+			}
+		}
+
+		switch(key) {
+			case 'c':
+				createNewMemo(memos);
+				options.insert(options.end(), memos.back().title);
+				break;
+			case 'x': 
+				removeMemo(memos, selectedOption);
+				options.erase(options.begin()+selectedOption);
+				if(selectedOption == memos.size()) 
+					selectedOption--;
+				saveMemos(memos);
+				break;
+			case KEY_ESC: 
+				endwin();
+				return 0;
+		}
+	}
 }
 
 std::string getnstring(int limit) {
@@ -68,8 +104,12 @@ void setWriteMode() {
 	curs_set(1);
 }
 
+void printGreeting() {
+	printw("You don't have any memos!\n");
+	printw("Press [C] to create a new one\n");
+}
+
 void printOptions(std::vector<std::string> options, int currentOption) {
-	clear();
 	for(int i = 0; i < options.size(); i++) {
 		if(i == currentOption)
 			attrset(A_REVERSE); 
@@ -79,36 +119,6 @@ void printOptions(std::vector<std::string> options, int currentOption) {
 
 		attrset(A_NORMAL);
 	}
-}
-
-int promptOptions(std::vector<std::string> options) {
-	setSelectMode();
-
-	int currentOption = 0;
-	while(true) {
-		printOptions(options, currentOption);
-
-		int key;
-		while((key = getch()) != KEY_UP && key != KEY_DOWN && key != '\n') 
-			;
-
-		switch(key) {
-			case KEY_UP: 
-				if(currentOption == 0) 
-					currentOption = options.size()-1;
-				else 
-					currentOption--;
-				break;
-			case KEY_DOWN: 
-				if(currentOption == options.size()-1) 
-					currentOption = 0;
-				else 
-					currentOption++;
-				break;
-			case '\n': 
-				return currentOption;
-		}
-	}	
 }
 
 void createNewMemo(std::vector<Memo>& memos) {
@@ -126,6 +136,11 @@ void createNewMemo(std::vector<Memo>& memos) {
 void editMemo(Memo& memo) {
 	setWriteMode();
 	editor::edit(memo.content);
+}
+
+void removeMemo(std::vector<Memo>& memos, int index) {
+		std::remove(memos[index].path.c_str());
+		memos.erase(memos.begin()+index);
 }
 
 void saveMemos(std::vector<Memo> memos) {
