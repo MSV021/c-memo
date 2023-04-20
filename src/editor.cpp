@@ -5,7 +5,11 @@
 
 #include <ncurses.h>
 
+void refreshLine(std::vector<std::string>, int);
+void refreshAll(std::vector<std::string>);
+
 void editor::edit(std::vector<std::string>& content) {
+	clear();
 	int cy = 0, cx = 0;
 	if(content.size() == 0) 
 		content.push_back(std::string());
@@ -20,20 +24,13 @@ void editor::edit(std::vector<std::string>& content) {
 
 	int key;
 	bool refline = false, refall = false;
-	while(1) {
+	while(true) {
 		if(refall) {
-			for(int i = 0; i < content.size(); i++) {
-				move(i, 0);
-				clrtoeol();
-				addstr(content[i].c_str());
-			}
+			refreshAll(content);	
 			refall = false;
 		}
-
-		if(refline) {
-			move(cy, 0);
-			clrtoeol();
-			addstr(content[cy].c_str());
+		else if(refline) {
+			refreshLine(content, cy);
 			refline = false;
 		}
 
@@ -41,25 +38,25 @@ void editor::edit(std::vector<std::string>& content) {
 		key = getch();
 		if(std::isprint(key)) {
 			content[cy].insert(content[cy].begin()+cx, key);
-			refline = true;
 			cx++;
+			refline = true;
 		}
 		else {
 			switch(key) {
 				case KEY_BACKSPACE: 
 					if(cx > 0 && content[cy].size() > 0) {
 						content[cy].erase(cx-1, 1);
-						refline = true;
 						cx--;
+						refline = true;
 					}
 					else if(cx == 0 && cy > 0) {
-						cx = content[cy-1].size();
 						content[cy-1] += content[cy];
 						content.erase(content.begin()+cy);
 						move(cy, 0); 
 						clrtoeol();
 						move(content.size(), 0);
 						clrtoeol();
+						cx = content[cy-1].size();
 						cy--;
 						refall = true;
 					}
@@ -79,24 +76,41 @@ void editor::edit(std::vector<std::string>& content) {
 					cx = content[cy].size();
 					break;
 				case KEY_LEFT: 
-					if(cx > 0) cx--;
+					if(cx > 0) 
+						cx--;
 					break;
 				case KEY_RIGHT: 
-					if(cx < content[cy].size()) cx++;
+					if(cx < content[cy].size()) 
+						cx++;
 					break;
 				case KEY_UP: 
-					if(cy > 0) cy--;
-					if(cx > content[cy].size()) cx = content[cy].size();
+					if(cy > 0) 
+						cy--;
+					if(cx > content[cy].size() || cx == content[cy+1].size()) 
+						cx = content[cy].size();
 					break;
 				case KEY_DOWN: 
-					if(cy < content.size()-1) cy++;
-					if(cx > content[cy].size()) cx = content[cy].size();
+					if(cy < content.size()-1) 
+						cy++;
+					if(cx > content[cy].size() || cx == content[cy-1].size())
+						cx = content[cy].size();
 					break;
 				case 27: 
 					return;
 			}
 		}
 	}
+}
+
+void refreshLine(std::vector<std::string> lines, int index) {
+	move(index, 0);
+	clrtoeol();
+	addstr(lines[index].c_str());
+}
+
+void refreshAll(std::vector<std::string> lines) {
+	for(int i = 0; i < lines.size(); i++)
+		refreshLine(lines, i);
 }
 
 
