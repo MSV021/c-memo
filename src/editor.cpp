@@ -4,6 +4,7 @@
 #include <cctype> 
 
 #include <ncurses.h>
+#define KEY_ESC 27
 
 void refreshLine(std::vector<std::string>, int);
 void refreshAll(std::vector<std::string>);
@@ -69,6 +70,13 @@ void editor::edit(std::vector<std::string>& content) {
 					cx = 0;
 					refall = true;	
 					break;
+				case '\t': 
+					for(int i = 0; i < 4; i++) {
+						content[cy].insert(content[cy].begin()+cx, ' ');
+						cx++;
+					}
+					refline = true;
+					break;
 				case KEY_HOME: 
 					cx = 0;
 					break;
@@ -95,7 +103,7 @@ void editor::edit(std::vector<std::string>& content) {
 					if(cx > content[cy].size() || cx == content[cy-1].size())
 						cx = content[cy].size();
 					break;
-				case 27: 
+				case KEY_ESC: 
 					return;
 			}
 		}
