@@ -4,18 +4,22 @@
 #include <fstream> 
 #include <vector> 
 #include <string> 
+#include <ctime> 
 
 #include <ncurses.h> 
 #define KEY_ESC 27
 
-const std::string SAVEFILE = "save.bin";
+const std::string SAVEFILE = "memos.txt";
 
 std::string getnstring(int);
+void printLine(void);
+
 void setSelectMode(void); 
 void setWriteMode(void);
 
-void printOptions(std::vector<std::string>, int);
-void printGreeting();
+void printMenu(std::vector<std::string>, int, bool);
+void printTitle(void);
+void printHelp(void);
 void editMemo(Memo&);
 void removeMemo(std::vector<Memo>&, int);
 void saveMemos(std::vector<Memo>);
@@ -35,54 +39,52 @@ int main() {
 		options.push_back(memo.title);
 
 	int key;
+	bool showHelp = true;
 	int selectedOption = 0;
 	while(true) {
 		clear();
-		if(!options.empty()) {
-			attrset(A_BOLD);
-			printw("YOUR MEMOS\n");
-			attrset(A_NORMAL);
-			printOptions(options, selectedOption);
-		}
-		else 
-			printGreeting();
+		printMenu(options, selectedOption, showHelp); 
 
 		setSelectMode();
 		key = getch();
-		if(!options.empty()) {
-			switch(key) {
-				case KEY_UP: 
-					selectedOption--;
-					if(selectedOption < 0) 
-						selectedOption = options.size()-1;
-					break;
-				case KEY_DOWN: 
-					selectedOption++;
-					if(selectedOption >= options.size()) 
-						selectedOption = 0;
-					break;
-				case '\n': 
-					editMemo(memos[selectedOption]);
-					saveMemos(memos);
-					break;	
-			}
-		}
-
 		switch(key) {
-			case 'c':
+			case 'c': 
 				createNewMemo(memos);
 				options.insert(options.end(), memos.back().title);
 				break;
-			case 'x': 
-				removeMemo(memos, selectedOption);
-				options.erase(options.begin()+selectedOption);
-				if(selectedOption == memos.size()) 
-					selectedOption--;
-				saveMemos(memos);
+			case 'h': 
+				showHelp = !showHelp;
 				break;
 			case KEY_ESC: 
 				endwin();
 				return 0;
+		}
+
+		if(options.empty()) 
+			continue;
+
+		switch(key) {
+			case KEY_UP: 
+				selectedOption--;
+				if(selectedOption < 0) 
+					selectedOption = options.size()-1;
+				break;
+			case KEY_DOWN: 
+				selectedOption++;
+				if(selectedOption >= options.size()) 
+					selectedOption = 0;
+				break;
+			case 'x': 
+				removeMemo(memos, selectedOption);
+				options.erase(options.begin()+selectedOption);
+				if(selectedOption == memos.size() && selectedOption != 0) 
+					selectedOption--;
+				saveMemos(memos);
+				break;
+			case '\n': 
+				editMemo(memos[selectedOption]);
+				saveMemos(memos);
+				break;
 		}
 	}
 }
@@ -92,6 +94,10 @@ std::string getnstring(int limit) {
 	getnstr(temp, limit);
 
 	return std::string(temp);
+}
+
+void printLine() {
+	printw("----------\n");
 }
 
 void setSelectMode() {
@@ -104,12 +110,32 @@ void setWriteMode() {
 	curs_set(1);
 }
 
-void printGreeting() {
-	printw("You don't have any memos!\n");
-	printw("Press [C] to create a new one\n");
+void printTitle() {
+	attrset(A_BOLD);
+	printw("C-MEMO\n");
+	attrset(A_NORMAL);
+	printLine();
 }
 
-void printOptions(std::vector<std::string> options, int currentOption) {
+void printHelp() {
+	attrset(A_LOW | A_ITALIC);
+	printw("Quick Help\n");
+	printw("[C]   -> create a new one\n");
+	printw("[X]   -> delete highlighted memo\n");
+	printw("[H]   -> hide quick help\n");
+	printw("[ESC] -> quit c-memo\n");
+	attrset(A_NORMAL);
+}
+
+void printMenu(std::vector<std::string> options, int currentOption, bool showHelp) {
+	printTitle();
+
+	if(options.empty()) {
+		attrset(A_ITALIC);
+		printw("Your memos will go here!\n");
+		attrset(A_NORMAL);
+	}
+
 	for(int i = 0; i < options.size(); i++) {
 		if(i == currentOption)
 			attrset(A_REVERSE); 
@@ -118,7 +144,11 @@ void printOptions(std::vector<std::string> options, int currentOption) {
 		addch('\n');
 
 		attrset(A_NORMAL);
-	}
+	}	
+
+	printLine();
+	if(showHelp) 
+		printHelp();
 }
 
 void createNewMemo(std::vector<Memo>& memos) {
@@ -127,6 +157,14 @@ void createNewMemo(std::vector<Memo>& memos) {
 
 		setWriteMode();
 		std::string title = getnstring(Memo::maxTitleLen);
+		
+		if(title.empty()) {
+			std::time_t now = std::time(0);
+			char* dt = ctime(&now);
+			title = dt;
+			title.pop_back();
+		}
+
 		title = "[ " + title + " ]";
 
 		std::string path = "memo" + std::to_string(memos.size()) + ".txt";
