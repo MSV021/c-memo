@@ -9,7 +9,8 @@
 #include <ncurses.h> 
 #define KEY_ESC 27
 
-const std::string SAVEFILE = "memos.txt";
+const std::string SAVEDIR = "/usr/share/memos/";
+const std::string SAVEFILE = SAVEDIR + "files.txt";
 
 std::string getnstring(int);
 void printLine(void);
@@ -167,7 +168,7 @@ void createNewMemo(std::vector<Memo>& memos) {
 
 		title = "[ " + title + " ]";
 
-		std::string path = "memo" + std::to_string(memos.size()) + ".txt";
+		std::string path = SAVEDIR + "memo" + std::to_string(memos.size()) + ".txt";
 		memos.push_back(Memo(path, title));
 }
 
